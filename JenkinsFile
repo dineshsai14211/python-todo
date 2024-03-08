@@ -52,7 +52,7 @@ pipeline {
                       git config  user.email "dinesh@example.com"
                       git config  user.name "dinesh"
 
-                      sed -i "s/v1/${BUILD_NUMBER}/g" deploy/deploy.yaml
+                      sed -i "s/python-todo.*/python-todo:${BUILD_NUMBER}/g" deploy/deploy.yaml
                       cd deploy/
                       git add deploy.yaml
                       git commit -m "version of manifest file changes"
