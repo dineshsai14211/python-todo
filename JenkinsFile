@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+    
+    environment{
+        img_tag = "${BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scmGit(branches: [[name: '*/master']], extensions: [], 
+                userRemoteConfigs: [[credentialsId: 'github', url: 'https://github.com/dineshsai14211/python-todo.git']])
+            }
+        }
+        
+        stage('Build Docker'){
+            steps{
+                script{
+                sh ''' 
+                    docker build -t dineshsai14211/python-todo:${img_tag} .
+                    echo "Build Docker Success"
+                '''
+                }
+            }
+            
+        }
+        
+        stage('Push Docker Image'){
+            steps{
+                script{
+                    
+                    withDockerRegistry(credentialsId: 'docker'){
+                    sh ''' 
+                    docker push dineshsai14211/python-todo:${img_tag}
+                    echo "Image Pushed to DockerHub"
+                     '''
+                }
+                    
+                }
+                
+                
+            }
+        }
+        
+        stage('Update the Manifeast files'){
+            steps{
+                script{
+                    withCredentials([gitUsernamePassword(credentialsId: 'github', gitToolName: 'Default')]) {
+                        
+                    sh '''
+                      cat deploy/deploy.yaml
+                      git config  user.email "dinesh@example.com"
+                      git config  user.name "dinesh"
+
+                      sed -i "s/v1/${BUILD_NUMBER}/g" deploy/deploy.yaml
+                      cd deploy/
+                      git add deploy.yaml
+                      git commit -m "version of manifest file changes"
+                      git remote -v
+                      git push origin HEAD:master
+                    '''
+                    }
+                }
+            }
+        }
+
+    }
+}
